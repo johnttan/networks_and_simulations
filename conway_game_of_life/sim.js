@@ -7,7 +7,7 @@
     this.color = color;
     this.width = width;
   }
-  Unit.prototype.step = function(grid){
+  var UnitStep = function(grid){
     var live = 0;
     var dead = 0;
     var neighbors = [grid[this.x][this.y-1], grid[this.x][this.y+1], grid[this.y][this.x+1], grid[this.y][this.x-1]];
@@ -57,6 +57,7 @@
       return true
     }
   }
+  Unit.prototype.step = UnitStep;
   var MainEngine = function(elId, threshold, interval, width){
     this.canvas = document.getElementById(elId);
     this.ctx = this.canvas.getContext('2d');
@@ -68,9 +69,9 @@
     this.steps = 0;
     this.width = width;
     (function(that){
-      _.each(_.range(100), function(el){
+      _.each(_.range(50), function(el){
         that.grid[el] = [];
-        _.each(_.range(100), function(el1){
+        _.each(_.range(50), function(el1){
           var rand = Math.random();
           var color = 'white';
           if(rand > that.threshold){
@@ -88,20 +89,30 @@
     // Each unit makes decision based on previous step.
     // Simulates simultaneous decision making.
     var changed = false;
+    var current;
+    if(this.steps == this.history.length){
+      current = this.grid;
+    }else{
+      current = this.history[this.steps-1]
+    }
     (function(that){
-      _.each(that.grid, function(el){
+      _.each(current, function(el){
         _.each(el, function(unit){
           if(!changed){
-            changed = unit.step(that.history[that.history.length-1]);
+            changed = UnitStep.call(unit, that.history[that.steps - 1]);
           }else{
-            unit.step(that.history[that.history.length-1]);
+            UnitStep.call(unit, that.history[that.steps-1]);
           }
         })
       })
     })(this)
     // This cloneDeep is used to maintain history of steps, but causes big performance issues.
-    this.history.push(_.cloneDeep(this.grid));
+    // A more efficient implementation would be to record the delta per unit per step.
+    if(this.steps == this.history.length){
+      this.history.push(_.cloneDeep(this.grid));
+    }
     this.steps += 1;
+    // Convergence detection bugged. Does not detect stable or equilibirum states.
     if(!changed){
       clearTimeout(this.cachedTimeout);
       console.log('converged in ', this.steps, 'steps')
@@ -110,15 +121,27 @@
 
   $(function(){
     // engine constructor accepts (canvasID, randomAliveThreshold, stepTimeInterval in ms, blockWidth)
-    var engine = new MainEngine('mainCanvas', .5, 100, 6);
+    var engine = new MainEngine('mainCanvas', .9, 100, 6);
     var go = function(){
-      engine.step();
+      engine.steps = engine.history.length;
       if(engine.cachedTimeout){
         clearTimeout(engine.cachedTimeout);
       }
+      engine.step();
       engine.cachedTimeout = setTimeout(go, engine.interval)
     }
-    go()
+    $('#go').click(go)
+    $('#stop').click(function(){
+      clearTimeout(engine.cachedTimeout);
+    })
+    $('#back').click(function(){
+      if(engine.steps > 1){
+        clearTimeout(engine.cachedTimeout);
+        console.log(engine.steps, "step")
+        engine.steps -= 2;
+        engine.step()
+      }
+    })
     // requestAnimationFrame(function(){
     //   console.log('rendering')
     //   engine.step();
