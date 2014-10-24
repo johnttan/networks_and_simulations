@@ -10,22 +10,25 @@
   var UnitStep = function(grid){
     var live = 0;
     var dead = 0;
-    var neighbors = [grid[this.x][this.y-1], grid[this.x][this.y+1], grid[this.x+1][this.y], grid[this.x-1][this.y]];
+    var neighbors = [];
     if(this.x-1 >= 0){
       var xminus = grid[this.x-1];
+      neighbors.push(xminus[this.y]);
     }
-    if(this.x+1 <= grid.length){
+    if(this.x+1 < grid.length){
       var xplus = grid[this.x+1];
+      neighbors.push(xplus[this.y])
     }
     if(this.y-1 >= 0){
+      neighbors.push(grid[this.x][this.y-1]);
       if(xplus){neighbors.push(xplus[this.y-1])};
       if(xminus){neighbors.push(xminus[this.y-1])};
     }
-    if(this.y+1 <= grid.length){
+    if(this.y+1 < grid.length){
+      neighbors.push(grid[this.x][this.y+1])
       if(xplus){neighbors.push(xplus[this.y+1])};
       if(xminus){neighbors.push(xminus[this.y+1])};
     }
-    console.log(neighbors)
     _.each(neighbors, function(el){
       if(el){
         if(el.color == 'black'){
@@ -69,22 +72,32 @@
     this.cachedTimeout;
     this.steps = 0;
     this.width = width;
-    (function(that){
-      _.each(_.range(100), function(el){
-        that.grid[el] = [];
-        _.each(_.range(100), function(el1){
-          var unit = new Unit(el, el1, 'white', that.ctx, that.width);
-          that.grid[el].push(unit);
+    this.init = function(){
+      this.steps = 0;
+      this.history = [];
+      (function(that){
+        _.each(_.range(100), function(el){
+          that.grid[el] = [];
+          _.each(_.range(100), function(el1){
+            var unit = new Unit(el, el1, 'white', that.ctx, that.width);
+            that.grid[el].push(unit);
+          })
         })
-      })
-    })(this)
-    if(coords){
+      })(this)
+    }
+    this.init();
+    this.initCoords = function(coords){
+      this.init();
       (function(that){
         _.each(coords, function(pair){
           that.grid[pair[0]][pair[1]].color = 'black';
         })
-      })(this)
-    }else{
+      })(this)  
+      this.history.push(_.cloneDeep(this.grid));
+
+    }
+    this.randomCoords = function(){
+      this.init();
       (function(that){
         _.each(_.range(100), function(el){
           _.each(_.range(100), function(el1){
@@ -96,7 +109,13 @@
             that.grid[el][el1].color = color;
           })
         })
-      })(this)
+      })(this)  
+      this.history.push(_.cloneDeep(this.grid));    
+    }
+    if(coords){
+      this.initCoords(coords);
+    }else{
+      this.randomCoords();
     }
     (function(that){
       _.each(that.grid, function(el){
@@ -175,6 +194,14 @@
     $('#go').click(go)
     $('#stop').click(function(){
       clearTimeout(engine.cachedTimeout);
+    })
+    $('#glider').click(function(){
+      clearTimeout(engine.cachedTimeout);
+      engine.initCoords(coords);
+    })
+    $('#random').click(function(){
+      clearTimeout(engine.cachedTimeout);
+      engine.randomCoords();
     })
     $('#back').click(function(){
       if(engine.steps > 1){
