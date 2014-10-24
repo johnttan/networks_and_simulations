@@ -10,7 +10,7 @@
   var UnitStep = function(grid){
     var live = 0;
     var dead = 0;
-    var neighbors = [grid[this.x][this.y-1], grid[this.x][this.y+1], grid[this.y][this.x+1], grid[this.y][this.x-1]];
+    var neighbors = [grid[this.x][this.y-1], grid[this.x][this.y+1], grid[this.x+1][this.y], grid[this.x-1][this.y]];
     if(this.x-1 >= 0){
       var xminus = grid[this.x-1];
     }
@@ -25,6 +25,7 @@
       if(xplus){neighbors.push(xplus[this.y+1])};
       if(xminus){neighbors.push(xminus[this.y+1])};
     }
+    console.log(neighbors)
     _.each(neighbors, function(el){
       if(el){
         if(el.color == 'black'){
@@ -48,17 +49,17 @@
     if(!changed){
       return false
     }else{
-      if(this.color == 'white'){
-        this.ctx.fillStyle = 'white';
-      }else{
-        this.ctx.fillStyle = 'black';
-      }
+      this.ctx.fillStyle = this.color;
       this.ctx.fillRect(this.x*this.width, this.y*this.width, this.width, this.width)
       return true
     }
   }
   Unit.prototype.step = UnitStep;
-  var MainEngine = function(elId, threshold, interval, width){
+  Unit.prototype.render = function(){
+    this.ctx.fillStyle = this.color
+    this.ctx.fillRect(this.x*this.width, this.y*this.width, this.width, this.width)
+  }
+  var MainEngine = function(elId, threshold, interval, width, coords){
     this.canvas = document.getElementById(elId);
     this.ctx = this.canvas.getContext('2d');
     this.history = [];
@@ -69,19 +70,42 @@
     this.steps = 0;
     this.width = width;
     (function(that){
-      _.each(_.range(50), function(el){
+      _.each(_.range(100), function(el){
         that.grid[el] = [];
-        _.each(_.range(50), function(el1){
-          var rand = Math.random();
-          var color = 'white';
-          if(rand > that.threshold){
-            color = 'black';
-          }
-          var unit = new Unit(el, el1, color, that.ctx, that.width);
+        _.each(_.range(100), function(el1){
+          var unit = new Unit(el, el1, 'white', that.ctx, that.width);
           that.grid[el].push(unit);
         })
       })
     })(this)
+    if(coords){
+      (function(that){
+        _.each(coords, function(pair){
+          that.grid[pair[0]][pair[1]].color = 'black';
+        })
+      })(this)
+    }else{
+      (function(that){
+        _.each(_.range(100), function(el){
+          _.each(_.range(100), function(el1){
+            var rand = Math.random();
+            var color = 'white';
+            if(rand > that.threshold){
+              color = 'black';
+            }
+            that.grid[el][el1].color = color;
+          })
+        })
+      })(this)
+    }
+    (function(that){
+      _.each(that.grid, function(el){
+        _.each(el, function(el1){
+          el1.render();
+        })
+      })
+    })(this)
+
     this.history.push(_.cloneDeep(this.grid));
     console.log(this.grid);
   }
@@ -120,8 +144,26 @@
   }
 
   $(function(){
+    var coords = false;
     // engine constructor accepts (canvasID, randomAliveThreshold, stepTimeInterval in ms, blockWidth)
-    var engine = new MainEngine('mainCanvas', .9, 100, 6);
+    // var coords = [[20, 20], [20, 21], [20, 22], [20, 23], [20, 24]]
+    // var coords = [[10, 10], [10, 11], [11, 10], [11, 11]]
+    var coords = [
+    [24, 8],
+    [22, 7], [24, 7],
+    [12, 6], [13, 6], [20, 6], [21, 6], [34, 6], [35, 6],
+    [11, 5], [15, 5], [20, 5], [21, 5], [34, 5], [35, 5],
+    [0, 4], [1, 4], [10, 4], [16, 4], [20, 4], [21, 4],
+    [0, 3], [1, 3], [10, 3], [14, 3], [16, 3], [17, 3], [22, 3], [24, 3],
+    [10, 2], [16, 2], [24, 2],
+    [11, 1], [15, 1],
+    [12, 0], [13, 0]
+]
+    _.each(coords, function(pair){
+      pair[0] += 10;
+      pair[1] += 10;
+    })
+    var engine = new MainEngine('mainCanvas', .9, 100, 6, coords);
     var go = function(){
       engine.steps = engine.history.length;
       if(engine.cachedTimeout){
