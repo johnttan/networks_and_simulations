@@ -76,9 +76,9 @@
       this.steps = 0;
       this.history = [];
       (function(that){
-        _.each(_.range(100), function(el){
+        _.each(_.range(50), function(el){
           that.grid[el] = [];
-          _.each(_.range(100), function(el1){
+          _.each(_.range(50), function(el1){
             var unit = new Unit(el, el1, 'white', that.ctx, that.width);
             that.grid[el].push(unit);
           })
@@ -99,8 +99,8 @@
     this.randomCoords = function(){
       this.init();
       (function(that){
-        _.each(_.range(100), function(el){
-          _.each(_.range(100), function(el1){
+        _.each(_.range(50), function(el){
+          _.each(_.range(50), function(el1){
             var rand = Math.random();
             var color = 'white';
             if(rand > that.threshold){
@@ -182,7 +182,7 @@
       pair[0] += 10;
       pair[1] += 10;
     })
-    var engine = new MainEngine('mainCanvas', .9, 100, 6, coords);
+    var engine = new MainEngine('mainCanvas', .9, 10, 6, coords);
     var go = function(){
       engine.steps = engine.history.length;
       if(engine.cachedTimeout){
